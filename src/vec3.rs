@@ -57,6 +57,17 @@ impl Vec3 {
             (255.999 * pixel_color.z) as i16
         )
     }
+
+    pub fn convert_color(pixel_color: Color) -> Vec<u8> {
+        let mut data = Vec::new();
+
+        data.push((255.999 * pixel_color.x) as u8);
+        data.push((255.999 * pixel_color.y) as u8);
+        data.push((255.999 * pixel_color.z) as u8);
+        data.push(255);
+
+        data
+    }
 }
 
 impl AddAssign<Vec3> for Vec3 {
