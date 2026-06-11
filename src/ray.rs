@@ -1,6 +1,7 @@
 use std::ops::Deref;
 use crate::vec3::{Point3, Vec3};
 
+#[derive(Default)]
 pub struct Ray {
     origin: Point3,
     direction: Vec3
@@ -14,7 +15,7 @@ impl Ray {
         }
     }
 
-    pub fn at(&self, t: f32) -> Point3 {
+    pub fn at(&self, t: f64) -> Point3 {
         self.origin + (self.direction * t)
     }
 
