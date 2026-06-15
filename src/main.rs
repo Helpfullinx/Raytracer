@@ -1,23 +1,19 @@
-mod vec3;
-mod ray;
 mod hittable;
 mod sphere;
+mod cube;
 mod hittable_list;
-mod utility;
 mod camera;
-mod interval;
 mod material;
-mod lambertian;
-mod metal;
+mod math;
 
 use std::rc::Rc;
 use crate::camera::Camera;
 use crate::hittable_list::HittableList;
-use crate::lambertian::Lambertian;
 use crate::material::Material;
-use crate::metal::Metal;
+use crate::material::lambertian::Lambertian;
+use crate::material::metal::Metal;
 use crate::sphere::Sphere;
-use crate::vec3::{Color, Point3};
+use crate::math::vec3::{Color, Point3};
 
 fn main() {
     //World
@@ -65,12 +61,11 @@ fn main() {
         )
     );
 
-
     //Camera
     let aspect_ratio: f64 = 16.0/9.0;
-    let image_width = 1920;
+    let image_width = 400;
 
-    let mut camera = Camera::new(aspect_ratio, image_width, 75, 50);
+    let mut camera = Camera::new(aspect_ratio, image_width, 50, 10);
 
     camera.debug_info();
 

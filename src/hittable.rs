@@ -1,9 +1,9 @@
 use std::rc::Rc;
-use crate::interval::Interval;
-use crate::lambertian::Lambertian;
+use crate::math::interval::Interval;
 use crate::material::Material;
-use crate::ray::Ray;
-use crate::vec3::{dot, Point3, Vec3};
+use crate::material::lambertian::Lambertian;
+use crate::math::ray::Ray;
+use crate::math::vec3::{dot, Point3, Vec3};
 #[derive(Clone)]
 pub struct HitRecord {
     pub p: Point3,

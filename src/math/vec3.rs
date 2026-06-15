@@ -1,7 +1,6 @@
 use std::ops::{Add, Sub, Mul, Div, Neg, AddAssign, SubAssign, DivAssign, MulAssign};
-use rand::random;
-use crate::interval::Interval;
-use crate::utility::{random_float, random_float_range};
+use crate::math::interval::Interval;
+use crate::math::utility::{random_float, random_float_range};
 
 const INTENSITY: Interval = Interval{ min: 0.0, max: 0.999 };
 
@@ -92,7 +91,6 @@ pub fn random_on_hemisphere(normal: &Vec3) -> Vec3 {
     } else {
         -on_unit_sphere
     }
-
 }
 
 #[inline]

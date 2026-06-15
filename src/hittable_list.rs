@@ -1,6 +1,6 @@
 use crate::hittable::{HitRecord, Hittable};
-use crate::interval::Interval;
-use crate::ray::Ray;
+use crate::math::interval::Interval;
+use crate::math::ray::Ray;
 
 #[derive(Default)]
 pub struct HittableList

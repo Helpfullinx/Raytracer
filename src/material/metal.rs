@@ -1,7 +1,7 @@
 use crate::hittable::HitRecord;
 use crate::material::Material;
-use crate::ray::Ray;
-use crate::vec3::{reflect, Color};
+use crate::math::ray::Ray;
+use crate::math::vec3::{reflect, Color};
 
 #[derive(Default, Clone, Copy)]
 pub struct Metal {

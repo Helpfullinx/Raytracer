@@ -4,10 +4,10 @@ use std::io::{BufWriter, Error, Write};
 use std::path::Path;
 use png::Encoder;
 use crate::hittable::{HitRecord, Hittable};
-use crate::interval::Interval;
-use crate::ray::Ray;
-use crate::utility::random_float_range;
-use crate::vec3::*;
+use crate::math::interval::Interval;
+use crate::math::ray::Ray;
+use crate::math::utility::random_float_range;
+use crate::math::vec3::{convert_color, unit_vector, Color, Point3, Vec3};
 
 #[derive(Default)]
 pub struct Camera {
