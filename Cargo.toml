@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 png = "0.18.1"
 rand = "0.10.1"
+rayon = "1.12.0"

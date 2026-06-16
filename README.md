@@ -6,14 +6,17 @@ I am currently following a walkthrough that covers all the fundamentals of how r
 works at its core and implementing it in rust.
 
 ### Links
-- The walkthrough: https://raytracing.github.io/books/RayTracingInOneWeekend.html
+- The walkthrough: [Ray Tracing in One Weekend — The Book Series](https://raytracing.github.io/)
 
-## How to use
-In order to get an image out of the raytracer, as of now, you will need to build the project
-into an executable and then run the program in terminal with the out put being piped into
-a ```.ppm``` file.
+### How to use
 
-Ex.
-```bash
- ./Raytracer.exe > image.ppm
+To render the scene run: 
+```commandline
+cargo run
 ```
+
+![image.png](resources/image.png)
+
+Samples Per Pixel: 600
+
+Light Bouce Depth: 100

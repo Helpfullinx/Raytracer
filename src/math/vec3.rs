@@ -1,6 +1,6 @@
 use std::ops::{Add, Sub, Mul, Div, Neg, AddAssign, SubAssign, DivAssign, MulAssign};
 use crate::math::interval::Interval;
-use crate::math::utility::{random_float, random_float_range};
+use crate::math::utility::{random_f64, random_float_range};
 
 const INTENSITY: Interval = Interval{ min: 0.0, max: 0.999 };
 
@@ -25,9 +25,9 @@ impl Vec3 {
 
     pub fn new_random() -> Self {
         Self {
-            x: random_float(),
-            y: random_float(),
-            z: random_float()
+            x: random_f64(),
+            y: random_f64(),
+            z: random_f64()
         }
     }
 
@@ -96,6 +96,14 @@ pub fn random_on_hemisphere(normal: &Vec3) -> Vec3 {
 #[inline]
 pub fn reflect(v: &Vec3, n: &Vec3) -> Vec3 {
     *v - *n * 2.0 * dot(v,n)
+}
+
+#[inline]
+pub fn refract(uv: &Vec3, n: &Vec3, etai_over_etat: f64) -> Vec3 {
+    let cos_theta = dot(&-*uv, n).min(1.0);
+    let r_out_perp = (*uv + *n * cos_theta) * etai_over_etat;
+    let r_out_parallel = *n * -(1.0 - r_out_perp.length_squared()).abs().sqrt();
+    return r_out_perp + r_out_parallel;
 }
 
 #[inline]

@@ -1,14 +1,15 @@
-use std::rc::Rc;
+use std::sync::Arc;
 use crate::math::interval::Interval;
 use crate::material::Material;
 use crate::material::lambertian::Lambertian;
 use crate::math::ray::Ray;
 use crate::math::vec3::{dot, Point3, Vec3};
+
 #[derive(Clone)]
 pub struct HitRecord {
     pub p: Point3,
     pub normal: Vec3,
-    pub material: Rc<dyn Material>,
+    pub material: Arc<dyn Material>,
     pub t: f64,
     pub front_face: bool
 }
@@ -21,14 +22,14 @@ impl HitRecord {
     }
 }
 
-pub trait Hittable {
+pub trait Hittable: Sync {
     fn hit(&self, r: &Ray, interval: Interval, rec: &mut HitRecord) -> bool;
 }
 
 impl Default for HitRecord {
     fn default() -> Self {
         Self{
-            material: Rc::new(Lambertian::default()),
+            material: Arc::new(Lambertian::default()),
             p: Default::default(),
             normal: Default::default(),
             
