@@ -1,10 +1,32 @@
 use std::ops::{Add, Sub, Mul, Div, Neg, AddAssign, SubAssign, DivAssign, MulAssign};
+use bytemuck::{Pod, Zeroable};
 use crate::math::interval::Interval;
 use crate::math::utility::{random_f64, random_float_range};
 
 const INTENSITY: Interval = Interval{ min: 0.0, max: 0.999 };
 
-#[derive(Debug,Default,Copy,Clone,PartialEq)]
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+pub struct Vec3Gpu {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+    _padding: f32
+}
+
+impl Vec3Gpu {
+    pub fn new(x: f32, y: f32, z: f32) -> Vec3Gpu {
+        Vec3Gpu {
+            x,
+            y,
+            z,
+            _padding: 0.0
+        }
+    }
+}
+
+#[derive(Debug, Default, Copy, Clone, PartialEq, Pod, Zeroable)]
+#[repr(C)]
 pub struct Vec3 {
     pub x: f64,
     pub y: f64,
@@ -125,6 +147,20 @@ pub fn convert_color(pixel_color: Color) -> Vec<u8> {
     let r = linear_to_gamma(pixel_color.x);
     let g = linear_to_gamma(pixel_color.y);
     let b = linear_to_gamma(pixel_color.z);
+
+    data.push((255.999 * INTENSITY.clamp(r)) as u8);
+    data.push((255.999 * INTENSITY.clamp(g)) as u8);
+    data.push((255.999 * INTENSITY.clamp(b)) as u8);
+    data.push(255);
+
+    data
+}
+
+pub fn convert_color_gpu(pixel_color: Vec3Gpu) -> Vec<u8> {
+    let mut data = Vec::new();
+    let r = linear_to_gamma(pixel_color.x as f64);
+    let g = linear_to_gamma(pixel_color.y as f64);
+    let b = linear_to_gamma(pixel_color.z as f64);
 
     data.push((255.999 * INTENSITY.clamp(r)) as u8);
     data.push((255.999 * INTENSITY.clamp(g)) as u8);

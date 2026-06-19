@@ -21,7 +21,8 @@ use crate::sphere::Sphere;
 use crate::math::vec3::{Color, Point3, Vec3};
 use crate::volume::Volume;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     //World
     let mut world: HittableList = Default::default();
 
@@ -126,7 +127,7 @@ fn main() {
 
     //Camera
     let aspect_ratio: f64 = 1.0;
-    let image_width = 1024;
+    let image_width = 256;
     let sky_color = Color::new(0.0,0.0,0.0);
     let ground_color = Color::new(0.0,0.0,0.0);
 
@@ -143,5 +144,5 @@ fn main() {
 
     camera.debug_info();
 
-    camera.render(&world)
+    camera.render_gpu(&world).await
 }

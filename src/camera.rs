@@ -3,13 +3,18 @@ use std::io;
 use std::io::{BufWriter, Error, Write};
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::mpsc::{channel, Receiver, Sender};
+use bytemuck::cast_slice;
 use png::Encoder;
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+use wgpu::{include_wgsl, BindGroupDescriptor, BindGroupEntry, BufferAsyncError, BufferUsages, ComputePipelineDescriptor, Instance, InstanceDescriptor, MapMode, PollType};
+use wgpu::util::{BufferInitDescriptor, DeviceExt};
+use wgpu::wgt::BufferDescriptor;
 use crate::hittable::{HitRecord, Hittable};
 use crate::math::interval::Interval;
 use crate::math::ray::Ray;
 use crate::math::utility::{degrees_to_radians, random_f64, random_float_range};
-use crate::math::vec3::{convert_color, cross, unit_vector, Color, Point3, Vec3};
+use crate::math::vec3::{convert_color, convert_color_gpu, cross, unit_vector, Color, Point3, Vec3, Vec3Gpu};
 use crate::postprocessing::denoise_bilateral;
 
 #[derive(Default)]
@@ -30,7 +35,16 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(origin: Vec3, look_at: Vec3, fov: f32, aspect_ratio: f64, image_width: u32, spp: u32, max_depth: u32, environment: (Color, Color)) -> Camera {
+    pub fn new(
+        origin: Vec3,
+        look_at: Vec3,
+        fov: f32,
+        aspect_ratio: f64,
+        image_width: u32,
+        spp: u32,
+        max_depth: u32,
+        environment: (Color, Color)
+    ) -> Camera {
         let mut image_height = (image_width as f64 / aspect_ratio) as u32;
         image_height = if image_height < 1 { 1 } else { image_height };
 
@@ -70,6 +84,97 @@ impl Camera {
             environment,
             ..Default::default()
         }
+    }
+
+    pub async fn render_gpu(self: &mut Self, world: &dyn Hittable) {
+        println!("----------------------Starting Render----------------------");
+        let test_data = vec![Vec3Gpu::new(0.0,0.0,0.0); 65536];
+
+        let instance_descriptor = InstanceDescriptor::new_without_display_handle();
+        let instance = Instance::new(instance_descriptor);
+        let adapter = instance.request_adapter(&Default::default()).await.unwrap();
+        let (device, queue) = adapter.request_device(&Default::default()).await.unwrap();
+        println!("Info: {:?}", adapter.get_info());
+        let mut encoder = device.create_command_encoder(&Default::default());
+
+        let shader = device.create_shader_module(include_wgsl!("shaders\\shader.wgsl"));
+        let pipeline = device.create_compute_pipeline(&ComputePipelineDescriptor {
+            label: Some("Ray Tracing Pipeline"),
+            layout: None,
+            module: &shader,
+            entry_point: None,
+            compilation_options: Default::default(),
+            cache: Default::default(),
+        });
+
+        let input_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("input"),
+            contents: cast_slice(&test_data),
+            usage: BufferUsages::STORAGE | BufferUsages::COPY_DST,
+        });
+
+        let output_buffer = device.create_buffer(&BufferDescriptor {
+            label: Some("output"),
+            size: input_buffer.size(),
+            usage: BufferUsages::STORAGE | BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
+
+        let temp_buffer = device.create_buffer(&BufferDescriptor{
+            label: Some("temp"),
+            size: input_buffer.size(),
+            usage: BufferUsages::COPY_DST | BufferUsages::MAP_READ,
+            mapped_at_creation: false,
+        });
+
+        let bind_group = device.create_bind_group(&BindGroupDescriptor{
+            label: None,
+            layout: &pipeline.get_bind_group_layout(0),
+            entries: &[
+                BindGroupEntry{
+                    binding: 0,
+                    resource: input_buffer.as_entire_binding(),
+                },
+                BindGroupEntry{
+                    binding: 1,
+                    resource: output_buffer.as_entire_binding(),
+                },
+            ],
+        });
+
+        {
+            let num_dispatches = test_data.len().div_ceil(64) as u32;
+
+            let mut pass = encoder.begin_compute_pass(&Default::default());
+            pass.set_pipeline(&pipeline);
+            pass.set_bind_group(0, &bind_group, &[]);
+            pass.dispatch_workgroups(num_dispatches, 1, 1);
+        }
+
+        encoder.copy_buffer_to_buffer(&output_buffer, 0, &temp_buffer, 0, output_buffer.size());
+
+        queue.submit([encoder.finish()]);
+
+        {
+            let (tx, rx): (Sender<Result<(), BufferAsyncError>>, Receiver<Result<(), BufferAsyncError>>) = channel();
+
+            temp_buffer.map_async(MapMode::Read, .., move |result| tx.send(result).unwrap());
+
+            device.poll(PollType::wait_indefinitely()).unwrap();
+
+            rx.recv().unwrap().unwrap();
+
+            let buffer_view = temp_buffer.get_mapped_range(..);
+
+            let received_data: &[Vec3Gpu] = cast_slice(&buffer_view);
+
+            let mut pixel_buffer = Vec::new();
+            received_data.iter().for_each(|v| {pixel_buffer.append(&mut convert_color_gpu(*v))});
+            self.pixel_data = pixel_buffer;
+            self.create_image().unwrap();
+        }
+
+        temp_buffer.unmap();
     }
 
     pub fn render(self: &mut Self, world: &dyn Hittable) {
@@ -118,8 +223,8 @@ impl Camera {
         }
     }
 
-    fn create_image(self: &Self) -> Result<(),Error> {
-        let path = Path::new(r"../resources/image.png");
+    fn create_image(self: &Self) -> Result<(), Error> {
+        let path = Path::new(r"./image.png");
         let file = File::create(path).unwrap();
         let ref mut w = BufWriter::new(file);
 
